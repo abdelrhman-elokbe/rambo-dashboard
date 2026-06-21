@@ -954,6 +954,11 @@ function renderBookings() {
       <td>${b.date?.slice(0,10)||'—'}</td>
       <td>${b.time_slot?.slice(0,5)||'—'}</td>
       <td><span class="badge ${b.status==='confirmed'?'badge-green':'badge-red'}">${b.status}</span></td>
+      <td>
+        <span class="badge ${b.source==='manual'?'badge-purple':'badge-blue'}">
+          ${b.source==='manual'?'🖊 Manual':'💬 WhatsApp'}
+        </span>
+      </td>
       <td style="display:flex;gap:6px;padding-top:8px">
         <button class="btn btn-sm" onclick="openDetail('${esc(b.booking_id)}')">View</button>
         <button class="btn btn-sm" onclick="editBooking('${esc(b.booking_id)}')">Edit</button>
