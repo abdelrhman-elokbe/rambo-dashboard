@@ -818,11 +818,6 @@ function renderRecentBookings() {
       <td>${b.date?.slice(0,10)||'—'}</td>
       <td>${b.time_slot?.slice(0,5)||'—'}</td>
       <td><span class="badge ${b.status==='confirmed'?'badge-green':'badge-red'}">${b.status}</span></td>
-      <td>
-  <span class="badge ${b.source === 'manual' ? 'badge-purple' : 'badge-blue'}">
-    ${b.source === 'manual' ? '🖊 Manual' : '💬 WhatsApp'}
-  </span>
-</td>
     </tr>`).join('')
   : '<tr><td colspan="5" class="table-empty">No bookings yet</td></tr>';
 }
