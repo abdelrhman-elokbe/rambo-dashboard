@@ -558,7 +558,7 @@ tr:hover td { background: var(--surface2); }
           </div>
           <table>
             <thead><tr>
-              <th>Patient</th><th>Day</th><th>Date</th><th>Time</th><th>Status</th>
+              <th>Patient</th><th>Day</th><th>Date</th><th>Time</th><th>Status</th><th>Source</th>
             </tr></thead>
             <tbody id="recent-tbody"></tbody>
           </table>
@@ -590,13 +590,18 @@ tr:hover td { background: var(--surface2); }
             <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
             <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
           </select>
+          <select id="filter-source" onchange="renderBookings()">
+            <option value="">All sources</option>
+            <option value="whatsapp">💬 WhatsApp</option>
+            <option value="manual">🖊 Manual</option>
+          </select>
           <button class="btn btn-primary" onclick="openBookingModal()">+ Add booking</button>
         </div>
         <div class="card">
           <table>
             <thead><tr>
               <th>Patient</th><th>WhatsApp</th><th>Day</th><th>Date</th>
-              <th>Time</th><th>Status</th><th>Source</th><th>Actions</th>
+              <th>Time</th><th>Status</th><th>Actions</th>
             </tr></thead>
             <tbody id="bookings-tbody"></tbody>
           </table>
@@ -711,8 +716,8 @@ tr:hover td { background: var(--surface2); }
 
 <script>
 // ── CONFIG — replace these two values ───────────────────────────
-const SUPABASE_URL = 'https://hgrywczcrrktkrqfuiiu.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_6ylcUA9mca9WiGWRp8hbmQ_7C9Xh_41';
+const SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+const SUPABASE_KEY = 'YOUR_ANON_OR_SERVICE_ROLE_KEY';
 
 // ── Hardcoded login ─────────────────────────────────────────────
 const CREDENTIALS = { username: 'dr.ahmed', password: 'clinic2024' };
@@ -800,6 +805,12 @@ function switchTab(name) {
   if (name === 'calendar') renderCalendar();
 }
 
+// ── Source badge helper ───────────────────────────────────────────
+function sourceBadge(source) {
+  const isManual = source === 'manual';
+  return `<span class="badge ${isManual ? 'badge-purple' : 'badge-blue'}">${isManual ? '🖊 Manual' : '💬 WhatsApp'}</span>`;
+}
+
 // ── Stats ────────────────────────────────────────────────────────
 function renderStats() {
   const today = new Date().toISOString().slice(0, 10);
@@ -818,8 +829,9 @@ function renderRecentBookings() {
       <td>${b.date?.slice(0,10)||'—'}</td>
       <td>${b.time_slot?.slice(0,5)||'—'}</td>
       <td><span class="badge ${b.status==='confirmed'?'badge-green':'badge-red'}">${b.status}</span></td>
+      <td>${sourceBadge(b.source)}</td>
     </tr>`).join('')
-  : '<tr><td colspan="5" class="table-empty">No bookings yet</td></tr>';
+  : '<tr><td colspan="6" class="table-empty">No bookings yet</td></tr>';
 }
 
 // ── Weekly calendar ──────────────────────────────────────────────
@@ -937,13 +949,15 @@ function renderCalendar() {
 // ── Bookings list ─────────────────────────────────────────────────
 function renderBookings() {
   const search = document.getElementById('search-bookings').value.toLowerCase();
-  const sf = document.getElementById('filter-status').value;
-  const df = document.getElementById('filter-day').value;
+  const sf     = document.getElementById('filter-status').value;
+  const df     = document.getElementById('filter-day').value;
+  const srcf   = document.getElementById('filter-source').value;
 
   const rows = allBookings.filter(b =>
     (!search || (b.patient_name||'').toLowerCase().includes(search) || (b.patient_wa_id||'').includes(search)) &&
-    (!sf || b.status === sf) &&
-    (!df || b.day === df)
+    (!sf   || b.status === sf) &&
+    (!df   || b.day    === df) &&
+    (!srcf || (b.source || 'whatsapp') === srcf)
   );
 
   document.getElementById('bookings-tbody').innerHTML = rows.length ? rows.map(b => `
@@ -954,11 +968,7 @@ function renderBookings() {
       <td>${b.date?.slice(0,10)||'—'}</td>
       <td>${b.time_slot?.slice(0,5)||'—'}</td>
       <td><span class="badge ${b.status==='confirmed'?'badge-green':'badge-red'}">${b.status}</span></td>
-      <td>
-        <span class="badge ${b.source==='manual'?'badge-purple':'badge-blue'}">
-          ${b.source==='manual'?'🖊 Manual':'💬 WhatsApp'}
-        </span>
-      </td>
+      <td>${sourceBadge(b.source)}</td>
       <td style="display:flex;gap:6px;padding-top:8px">
         <button class="btn btn-sm" onclick="openDetail('${esc(b.booking_id)}')">View</button>
         <button class="btn btn-sm" onclick="editBooking('${esc(b.booking_id)}')">Edit</button>
@@ -967,7 +977,7 @@ function renderBookings() {
           : ''}
       </td>
     </tr>`).join('')
-  : '<tr><td colspan="7" class="table-empty">No bookings found</td></tr>';
+  : '<tr><td colspan="8" class="table-empty">No bookings found</td></tr>';
 }
 
 // ── Booking detail modal ──────────────────────────────────────────
@@ -981,6 +991,7 @@ function openDetail(bookingId) {
     <div class="detail-row"><span class="detail-label">Date</span><span class="detail-value">${b.date?.slice(0,10)||'—'}</span></div>
     <div class="detail-row"><span class="detail-label">Time</span><span class="detail-value">${b.time_slot?.slice(0,5)||'—'}</span></div>
     <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value"><span class="badge ${b.status==='confirmed'?'badge-green':'badge-red'}">${b.status}</span></span></div>
+    <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value">${sourceBadge(b.source)}</span></div>
     <div class="detail-row"><span class="detail-label">Booking ID</span><span class="detail-value" style="font-size:12px;color:var(--text2)">${esc(b.booking_id||'—')}</span></div>
     <div class="detail-row"><span class="detail-label">Created</span><span class="detail-value" style="font-size:12px;color:var(--text2)">${b.created_at?.slice(0,16)||'—'}</span></div>
   `;
