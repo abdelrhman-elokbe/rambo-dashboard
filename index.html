@@ -1032,6 +1032,7 @@ async function saveBooking() {
   if (!name || !wa || !date || !time) { toast('Fill all required fields', 'error'); return; }
 
   const payload = { patient_name: name, patient_wa_id: wa, day, date, time_slot: time + ':00', status, doctor_id: 'D01' };
+  if (!editingBookingId) payload.source = 'manual';
   try {
     if (editingBookingId) {
       await sb('PATCH', 'bookings', payload, `?booking_id=eq.${editingBookingId}`);
